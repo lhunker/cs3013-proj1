@@ -1,16 +1,19 @@
 /* doit.cpp */
 
 #include <iostream>
+#include <sstream>
 using namespace std;
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/resource.h>
 #include <sys/time.h>
+#include <vector>
 
 void runCommand(char *args[]);
 void getStats();
 double timevalToMs (struct timeval time);
+void runShell();
 
 int main (int argc, char *argv[]){
 	if (argc > 1){	//temporary
@@ -21,8 +24,57 @@ int main (int argc, char *argv[]){
 		newargs[argc -1] = 0;
 		runCommand(newargs);
 		getStats();
+	}else{
+		runShell();
 	}
 	exit(0);
+}
+
+/*
+ * Runs the program in command shell mode, listening for commands until the user exits
+ */
+void runShell(){
+	bool exit = false;
+	while (!exit) {
+		vector<string> args;
+		cout << "==>" ;
+		string line;
+		getline(cin, line);
+		istringstream input (line);
+		string word;
+		vector<string> list;
+		while(input >> word){
+			list.push_back(word);
+			if (word == "exit"){
+				exit = true;
+			}
+		}
+
+		if(exit){
+			break;
+		}
+
+		//Fork a new process to run command and get statistics
+		int pid;
+		if ((pid = fork()) < 0){
+			cerr << "Fork error \n";
+		} else if (pid == 0){
+			//Child process, run command
+			
+			//copy args
+			char *newargs[list.size() + 1];
+			for(int i = 0; i < (int)list.size(); i++){
+				newargs[i] = (char *)list[i].c_str();
+			} 
+			newargs[list.size()] = 0;
+			runCommand(newargs);
+			getStats();
+			return;	
+		}else{
+			//Add wait check here
+			wait(0);
+		}
+	}
 }
 
 /*
@@ -40,7 +92,7 @@ void getStats(){
 	double utime = timevalToMs(usage.ru_utime);
 	double stime = timevalToMs(usage.ru_stime);
 	double wtime = timevalToMs(end) - timevalToMs(start);
-	cout << "Statistics\n";
+	cout << "\n--Statistics--\n";
 	cout << "Wall time : " << wtime << "ms\n";
         cout << "User Time: " << utime  << "ms\n";
 	cout << "System Time : " << stime << "ms\n";
