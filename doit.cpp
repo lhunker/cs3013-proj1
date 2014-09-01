@@ -44,6 +44,7 @@ void runShell(){
 		string word;
 		vector<string> list;
 		while(input >> word){
+			//TODO check for eof
 			list.push_back(word);
 			if (word == "exit"){
 				exit = true;
@@ -52,28 +53,38 @@ void runShell(){
 
 		if(exit){
 			break;
-		}
+		}else if (list.size() < 1){
+			//Do nothing
+		}else if(list[0] == "cd"){
+			//Change directory
 
-		//Fork a new process to run command and get statistics
-		int pid;
-		if ((pid = fork()) < 0){
-			cerr << "Fork error \n";
-		} else if (pid == 0){
-			//Child process, run command
+			if (chdir(list[1].c_str()) < 0){
+				cerr << "Error changing directory\n";
+			}
+		}else {
+
+			//Fork a new process to run command and get statistics
+			int pid;
+			if ((pid = fork()) < 0){
+				cerr << "Fork error \n";
+			} else if (pid == 0){
+				//Child process, run command
 			
-			//copy args
-			char *newargs[list.size() + 1];
-			for(int i = 0; i < (int)list.size(); i++){
-				newargs[i] = (char *)list[i].c_str();
-			} 
-			newargs[list.size()] = 0;
-			runCommand(newargs);
-			getStats();
-			return;	
-		}else{
-			//Add wait check here
-			wait(0);
+				//copy args
+				char *newargs[list.size() + 1];
+				for(int i = 0; i < (int)list.size(); i++){
+					newargs[i] = (char *)list[i].c_str();
+				} 
+				newargs[list.size()] = 0;
+				runCommand(newargs);
+				getStats();
+				return;	
+			}else{
+				//Add wait check here
+				wait(0);
+			}
 		}
+		list.clear();
 	}
 }
 
