@@ -15,8 +15,12 @@ void getStats();
 double timevalToMs (struct timeval time);
 void runShell();
 
+//Struct to hold running total of statistics
+struct rusage total;
+
 int main (int argc, char *argv[]){
-	if (argc > 1){	//temporary
+	getrusage(RUSAGE_CHILDREN, &total);
+	if (argc > 1){
 		char *newargs[argc];
 		for (int i = 1; i < argc; i++){
 			newargs[i-1] = argv[i];
@@ -62,27 +66,16 @@ void runShell(){
 				cerr << "Error changing directory\n";
 			}
 		}else {
+			//Child process, run command
 
-			//Fork a new process to run command and get statistics
-			int pid;
-			if ((pid = fork()) < 0){
-				cerr << "Fork error \n";
-			} else if (pid == 0){
-				//Child process, run command
-			
-				//copy args
-				char *newargs[list.size() + 1];
-				for(int i = 0; i < (int)list.size(); i++){
-					newargs[i] = (char *)list[i].c_str();
-				} 
-				newargs[list.size()] = 0;
-				runCommand(newargs);
-				getStats();
-				return;	
-			}else{
-				//Add wait check here
-				wait(0);
-			}
+			//copy args
+			char *newargs[list.size() + 1];
+			for(int i = 0; i < (int)list.size(); i++){
+				newargs[i] = (char *)list[i].c_str();
+			} 
+			newargs[list.size()] = 0;
+			runCommand(newargs);
+			getStats();
 		}
 		list.clear();
 	}
@@ -100,19 +93,20 @@ void getStats(){
 	if(getrusage(RUSAGE_CHILDREN, &usage) != 0){
         	cerr << "Error getting usage\n";
         }
-	double utime = timevalToMs(usage.ru_utime);
-	double stime = timevalToMs(usage.ru_stime);
+	double utime = timevalToMs(usage.ru_utime) - timevalToMs(total.ru_utime);
+	double stime = timevalToMs(usage.ru_stime) - timevalToMs(total.ru_stime);
 	double wtime = timevalToMs(end) - timevalToMs(start);
 	cout << "\n--Statistics--\n";
 	cout << "Wall time : " << wtime << "ms\n";
         cout << "User Time: " << utime  << "ms\n";
 	cout << "System Time : " << stime << "ms\n";
-	cout << "Involuntarily preempted " << usage.ru_nivcsw << " times\n";
-	cout << "Voluntarily preempted " << usage.ru_nvcsw << " times\n";
-	cout << "Page faults : " << usage.ru_majflt << "\n";
+	cout << "Involuntarily preempted " << usage.ru_nivcsw - total.ru_nivcsw << " times\n";
+	cout << "Voluntarily preempted " << usage.ru_nvcsw - total.ru_nvcsw << " times\n";
+	cout << "Page faults : " << usage.ru_majflt  - total.ru_majflt << "\n";
 	cout << "Page faults satisfied by memory reclaim: " << usage.ru_minflt << "\n";
-
+	total = usage;
 }
+
 
 /*
  * Converts a timeval struct to milliseconds
