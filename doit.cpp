@@ -9,17 +9,47 @@ using namespace std;
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <vector>
+#include <signal.h>
+#include <map>
 
-void runCommand(char *args[]);
-void getStats();
+int runCommand(char *args[]);
+void getStats(double startin, int pid);
 double timevalToMs (struct timeval time);
 void runShell();
 
 //Struct to hold running total of statistics
 struct rusage total;
+//Structure to hold info on running processes
+struct process {
+	int pid;
+	string title;
+	double startTime;
+	int num;
+};
+map <int, process> running;
+
+void processComplete (int num){
+	int pid, status;
+	pid = waitpid(-1, &status, WNOHANG);
+	if (!(running.find(pid) == running.end())){
+		process info = running[pid];
+		running.erase(pid);
+		cout << "[" << info.num << "] " << pid << " completed\n";
+		getStats(info.startTime, pid);
+	}
+}
+
 
 int main (int argc, char *argv[]){
+	//Set baseline value for usage totals
 	getrusage(RUSAGE_CHILDREN, &total);
+
+	//Setup listener for child termination
+	struct sigaction sigchld_action; 
+  	memset (&sigchld_action, 0, sizeof (sigchld_action)); 
+  	sigchld_action.sa_handler = &processComplete; 
+  	sigaction (SIGCHLD, &sigchld_action, NULL);
+
 	if (argc > 1){
 		char *newargs[argc];
 		for (int i = 1; i < argc; i++){
@@ -27,7 +57,7 @@ int main (int argc, char *argv[]){
 		}
 		newargs[argc -1] = 0;
 		runCommand(newargs);
-		getStats();
+		getStats(-1, 0);
 	}else{
 		runShell();
 	}
@@ -43,6 +73,7 @@ void runShell(){
 		vector<string> args;
 		cout << "==>" ;
 		string line;
+		cin.clear();
 		getline(cin, line);
 		istringstream input (line);
 		string word;
@@ -56,7 +87,13 @@ void runShell(){
 		}
 
 		if(exit){
-			break;
+			if( running.size() == 0)
+				break;
+			else{
+			
+			cout << "There are processes running, please wait before exiting\n";
+			exit = false;
+			}
 		}else if (list.size() < 1){
 			//Do nothing
 		}else if(list[0] == "cd"){
@@ -66,16 +103,30 @@ void runShell(){
 				cerr << "Error changing directory\n";
 			}
 		}else {
-			//Child process, run command
-
 			//copy args
 			char *newargs[list.size() + 1];
 			for(int i = 0; i < (int)list.size(); i++){
 				newargs[i] = (char *)list[i].c_str();
 			} 
 			newargs[list.size()] = 0;
-			runCommand(newargs);
-			getStats();
+
+			//remove & if it is in the list
+			bool back = false;
+			if(newargs[list.size() -1][0] ==  '&'){
+				newargs[list.size() -1 ] = 0;
+				back = true;
+			}
+			int pid = runCommand(newargs);
+			if(back){
+				struct timeval astart;
+				gettimeofday(&astart, NULL);
+				process p = {pid, newargs[0], timevalToMs(astart), running.size()+1};
+				running[pid] = p;
+				cout << "[" << running.size() << "] " << pid << "\n";
+			}else{
+				cout << "run called stats\n";
+				getStats(-1, pid);
+			}
 		}
 		list.clear();
 	}
@@ -84,18 +135,23 @@ void runShell(){
 /*
  * Finds and prints statistics of the completed child process
  */
-void getStats(){
+void getStats(double startin, int pid = -1){
 	struct rusage usage;
 	struct timeval start, end;
-	gettimeofday(&start, NULL);
-	wait(0);	//Wait for child to complete
+	if( startin < 0){
+		gettimeofday(&start, NULL);
+		startin = timevalToMs(start);
+		int status;
+		waitpid(pid, &status, 0 );	//Wait for child to complete
+		cout << pid << " completed\n";
+	}
 	gettimeofday(&end, NULL);
 	if(getrusage(RUSAGE_CHILDREN, &usage) != 0){
         	cerr << "Error getting usage\n";
         }
 	double utime = timevalToMs(usage.ru_utime) - timevalToMs(total.ru_utime);
 	double stime = timevalToMs(usage.ru_stime) - timevalToMs(total.ru_stime);
-	double wtime = timevalToMs(end) - timevalToMs(start);
+	double wtime = timevalToMs(end) - startin;
 	cout << "\n--Statistics--\n";
 	cout << "Wall time : " << wtime << "ms\n";
         cout << "User Time: " << utime  << "ms\n";
@@ -126,7 +182,7 @@ double timevalToMs(struct timeval time){
  * Params:
  * 	args - the command line arguments
  */
-void runCommand(char *args[]){
+int runCommand(char *args[]){
 	int pid;
 	if ((pid = fork()) < 0){	//error
 		cerr << "Error forking process\n";
@@ -138,6 +194,6 @@ void runCommand(char *args[]){
 		exit(1);
 	}
 	else{	//is parent process
-	
+		return pid;	
 	}	
 }
