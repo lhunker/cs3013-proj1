@@ -16,6 +16,7 @@ int runCommand(char *args[]);
 void getStats(double startin, int pid);
 double timevalToMs (struct timeval time);
 void runShell();
+void printJobs();
 
 //Struct to hold running total of statistics
 struct rusage total;
@@ -28,6 +29,11 @@ struct process {
 };
 map <int, process> running;
 
+/*
+ * The process that gets called when a child end signal is recieved
+ * Params:
+ * 	num - the signal number (not used)
+ */
 void processComplete (int num){
 	int pid, status;
 	pid = waitpid(-1, &status, WNOHANG);
@@ -74,6 +80,10 @@ void runShell(){
 		cout << "==>" ;
 		string line;
 		cin.clear();
+		if(cin.peek() == EOF){
+			exit = true;
+			break;
+		}
 		getline(cin, line);
 		istringstream input (line);
 		string word;
@@ -102,6 +112,9 @@ void runShell(){
 			if (chdir(list[1].c_str()) < 0){
 				cerr << "Error changing directory\n";
 			}
+		}else if(list[0] == "jobs"){
+
+			printJobs();
 		}else {
 			//copy args
 			char *newargs[list.size() + 1];
@@ -124,7 +137,6 @@ void runShell(){
 				running[pid] = p;
 				cout << "[" << running.size() << "] " << pid << "\n";
 			}else{
-				cout << "run called stats\n";
 				getStats(-1, pid);
 			}
 		}
@@ -133,7 +145,21 @@ void runShell(){
 }
 
 /*
+ * Prints the currently running jobs to the console
+ */
+void printJobs(){
+	typedef map<int, process>::iterator it_type;
+	for (it_type it = running.begin(); it != running.end(); it++){
+		process info = it->second;
+		cout << "[" << info.num << "] " << info.pid << " " << info.title << "\n";
+	}
+}
+
+/*
  * Finds and prints statistics of the completed child process
+ * Params:
+ * 	startin - the wall clock time the process started in ms, -1 if the function should wait for it to complete
+ * 	pid - the pid of the process to wait on, -1 if not waiting
  */
 void getStats(double startin, int pid = -1){
 	struct rusage usage;
@@ -143,7 +169,6 @@ void getStats(double startin, int pid = -1){
 		startin = timevalToMs(start);
 		int status;
 		waitpid(pid, &status, 0 );	//Wait for child to complete
-		cout << pid << " completed\n";
 	}
 	gettimeofday(&end, NULL);
 	if(getrusage(RUSAGE_CHILDREN, &usage) != 0){
