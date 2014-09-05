@@ -1,4 +1,6 @@
-/* doit.cpp */
+/* doit.cpp 
+* A simple program for calling programs both through command line arguments and a simple shell
+*/
 
 #include <iostream>
 #include <sstream>
@@ -57,6 +59,7 @@ int main (int argc, char *argv[]){
   	sigaction (SIGCHLD, &sigchld_action, NULL);
 
 	if (argc > 1){
+		//Handle running from arguments
 		char *newargs[argc];
 		for (int i = 1; i < argc; i++){
 			newargs[i-1] = argv[i];
@@ -80,23 +83,29 @@ void runShell(){
 		cout << "==>" ;
 		string line;
 		cin.clear();
+
+		//check for EOF
 		if(cin.peek() == EOF){
 			exit = true;
+			cout << "Found EOF\n";
 			break;
 		}
+
+		//Get line and convert to vector
 		getline(cin, line);
 		istringstream input (line);
 		string word;
 		vector<string> list;
 		while(input >> word){
-			//TODO check for eof
 			list.push_back(word);
-			if (word == "exit"){
+			if (word == "exit" && list.size() == 1){
+				cout << "typed exit\n";
 				exit = true;
 			}
 		}
 
 		if(exit){
+			//Check if background processes are running
 			if( running.size() == 0)
 				break;
 			else{
@@ -131,16 +140,19 @@ void runShell(){
 			}
 			int pid = runCommand(newargs);
 			if(back){
+				//Setup task as background task
 				struct timeval astart;
 				gettimeofday(&astart, NULL);
 				process p = {pid, newargs[0], timevalToMs(astart), running.size()+1};
 				running[pid] = p;
 				cout << "[" << running.size() << "] " << pid << "\n";
 			}else{
+				//wait and get stats
 				getStats(-1, pid);
 			}
 		}
 		list.clear();
+
 	}
 }
 
@@ -177,6 +189,8 @@ void getStats(double startin, int pid = -1){
 	double utime = timevalToMs(usage.ru_utime) - timevalToMs(total.ru_utime);
 	double stime = timevalToMs(usage.ru_stime) - timevalToMs(total.ru_stime);
 	double wtime = timevalToMs(end) - startin;
+
+	//Print statistics
 	cout << "\n--Statistics--\n";
 	cout << "Wall time : " << wtime << "ms\n";
         cout << "User Time: " << utime  << "ms\n";
@@ -184,7 +198,9 @@ void getStats(double startin, int pid = -1){
 	cout << "Involuntarily preempted " << usage.ru_nivcsw - total.ru_nivcsw << " times\n";
 	cout << "Voluntarily preempted " << usage.ru_nvcsw - total.ru_nvcsw << " times\n";
 	cout << "Page faults : " << usage.ru_majflt  - total.ru_majflt << "\n";
-	cout << "Page faults satisfied by memory reclaim: " << usage.ru_minflt << "\n";
+	cout << "Page faults satisfied by memory reclaim: " << usage.ru_minflt - total.ru_minflt << "\n";
+	
+	//Set total of all completed tasks
 	total = usage;
 }
 

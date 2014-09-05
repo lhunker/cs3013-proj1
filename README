@@ -1,0 +1,41 @@
+doit Program
+
+Lukas Hunker
+
+To compile:
+g++ -Wall -o doit doit.cpp
+
+To run:
+./doit <shell command> 
+	To run one command
+or
+./doit
+	To run in shell mode
+
+Supports
+-Running one command line argument
+-Running in shell mode
+-changing directories
+-Running processes in the background
+-Printing currently running jobs
+
+Does not support
+-Piping commands in
+-Tab auto completion
+
+Algorithm
+For command line arguments - 
+	take out first argument
+	fork a new process and run command with execvp
+	wait for completion and get stats with getrusage
+
+For shell mode
+	Wait for input
+	Read line
+	Read individual words into a vector using an input stream
+	fork with process used for command line arguments
+
+For Background tasks
+	Same as above except
+	Store starting time and info about process in a map
+	When signaled that process has completed - print stats and remove from map
