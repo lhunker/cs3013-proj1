@@ -84,13 +84,6 @@ void runShell(){
 		string line;
 		cin.clear();
 
-		//check for EOF
-		if(cin.peek() == EOF){
-			exit = true;
-			cout << "Found EOF\n";
-			break;
-		}
-
 		//Get line and convert to vector
 		getline(cin, line);
 		istringstream input (line);
@@ -99,7 +92,6 @@ void runShell(){
 		while(input >> word){
 			list.push_back(word);
 			if (word == "exit" && list.size() == 1){
-				cout << "typed exit\n";
 				exit = true;
 			}
 		}

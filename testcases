@@ -1,0 +1,119 @@
+Script started on Thu 04 Sep 2014 10:24:35 PM EDT
+bash-3.2$ ./doit ls
+doit  doit.cpp	inputtest.cpp  README  test  testcases	testin	typescript
+
+--Statistics--
+Wall time : 1.00708ms
+User Time: 0ms
+System Time : 4ms
+Involuntarily preempted 2 times
+Voluntarily preempted 3 times
+Page faults : 0
+Page faults satisfied by memory reclaim: 291
+bash-3.2$ ./doit  ../stress-1.0.4/src/stress -c 2 -t 10
+stress: info: [12840] dispatching hogs: 2 cpu, 0 io, 0 vm, 0 hdd
+stress: info: [12840] successful run completed in 10s
+
+--Statistics--
+Wall time : 10010.1ms
+User Time: 12700.8ms
+System Time : 16.001ms
+Involuntarily preempted 626 times
+Voluntarily preempted 13 times
+Page faults : 0
+Page faults satisfied by memory reclaim: 269
+bash-3.2$ ./doit
+==>cat /etc/motd
+
+CCC Station - Authorized Use Only
+
+Mail all questions or problems to the address helpdesk@wpi.edu or use the
+help command to view the CCC Helpdesk web at http://www.wpi.edu/+CCC/Help.
+
+Please use the aup command to view the Acceptable Use Policy of the WPI
+network.
+
+This station is for interactive use.
+
+--Statistics--
+Wall time : 1.31494ms
+User Time: 0ms
+System Time : 0ms
+Involuntarily preempted 1 times
+Voluntarily preempted 1 times
+Page faults : 0
+Page faults satisfied by memory reclaim: 192
+==>
+==>
+==>ls
+doit  doit.cpp	inputtest.cpp  README  test  testcases	testin	typescript
+
+--Statistics--
+Wall time : 0.87915ms
+User Time: 0ms
+System Time : 0ms
+Involuntarily preempted 0 times
+Voluntarily preempted 3 times
+Page faults : 0
+Page faults satisfied by memory reclaim: 293
+==>
+==>
+==>cd ..
+==>ls
+proj1  stress-1.0.4
+
+--Statistics--
+Wall time : 3.40308ms
+User Time: 12ms
+System Time : 0ms
+Involuntarily preempted 2 times
+Voluntarily preempted 4 times
+Page faults : 0
+Page faults satisfied by memory reclaim: 293
+==>cd proj1
+==>
+==>
+==>
+==> ../stress-1.0.4/src/stress -c 2 -t 10 &
+[1] 13017
+==>stress: info: [13017] dispatching hogs: 2 cpu, 0 io, 0 vm, 0 hdd
+
+==>
+==> ../stress-1.0.4/src/stress -c 2 -t 10 &
+[2] 13026
+==>stress: info: [13026] dispatching hogs: 2 cpu, 0 io, 0 vm, 0 hdd
+
+==>
+==>
+==>
+==>jobs
+[1] 13017 ../stress-1.0.4/src/stress
+[2] 13026 ../stress-1.0.4/src/stress
+==>
+==>
+==>stress: info: [13017] successful run completed in 11s
+[1] 13017 completed
+
+--Statistics--
+Wall time : 10328.2ms
+User Time: 9732.61ms
+System Time : 0ms
+Involuntarily preempted 437 times
+Voluntarily preempted 14 times
+Page faults : 0
+Page faults satisfied by memory reclaim: 272
+==>stress: info: [13026] successful run completed in 11s
+[2] 13026 completed
+
+--Statistics--
+Wall time : 10016.2ms
+User Time: 12116.8ms
+System Time : 20.001ms
+Involuntarily preempted 673 times
+Voluntarily preempted 8 times
+Page faults : 0
+Page faults satisfied by memory reclaim: 274
+==>exit
+bash-3.2$ exit
+
+Script done on Thu 04 Sep 2014 10:26:10 PM EDT
